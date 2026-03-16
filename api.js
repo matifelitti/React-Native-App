@@ -1,15 +1,19 @@
-import { API_KEY } from "@env";
-
-const BASE_URL = "https://api.themoviedb.org";
+const URL = "https://ghibliapi.vercel.app";
 
 export async function getMovies() {
-  const url = `${BASE_URL}/movie/popular?api_key=${API_KEY}&language=es-ES&page=1`;
+  const url = `${URL}/films`;
 
   try {
     const response = await fetch(url);
     const json = await response.json();
 
-    return json.results;
+    return json.map((movie) => ({
+      id: movie.id,
+      title: movie.title,
+      description: movie.description,
+      image: movie.image,
+      rating: movie.rt_score,
+    }));
   } catch (error) {
     console.error("Error:", error);
     return [];
