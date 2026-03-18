@@ -1,21 +1,35 @@
-const URL = "https://ghibliapi.vercel.app";
+import { OMDB_API_KEY } from "@env";
 
-export async function getMovies() {
-  const url = `${URL}/films`;
+const BASE_URL = "https://www.omdbapi.com";
 
+export async function getMovies(page = 1) {
   try {
-    const response = await fetch(url);
-    const json = await response.json();
+    const response = await fetch(
+      `${BASE_URL}?apikey=${OMDB_API_KEY}&s=Marvel&page=${page}&type=movie`,
+    );
+    const data = await response.json();
 
-    return json.map((movie) => ({
-      id: movie.id,
-      title: movie.title,
-      description: movie.description,
-      image: movie.image,
-      rating: movie.rt_score,
+    if (data.Response === "False") return [];
+
+    const detailedMovies = await Promise.all(
+      data.Search.map(async (movie) => {
+        const detailRes = await fetch(
+          `${BASE_URL}?apikey=${OMDB_API_KEY}&i=${movie.imdbID}&plot=short`,
+        );
+        return detailRes.json();
+      }),
+    );
+
+    return detailedMovies.map((m) => ({
+      id: m.imdbID,
+      title: m.Title,
+      description: m.Plot !== "N/A" ? m.Plot : "No description available.",
+      image: m.Poster !== "N/A" ? m.Poster : "https://via.placeholder.com",
+      year: m.Year,
+      rating: m.imdbRating,
     }));
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Error in OMDb:", error);
     return [];
   }
 }
