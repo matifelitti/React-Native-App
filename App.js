@@ -5,159 +5,178 @@ import {
   View,
   FlatList,
   Image,
+  TextInput,
   ActivityIndicator,
   SafeAreaView,
-  Dimensions,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
 } from "react-native";
 import { getMovies } from "./api";
 
-const { width } = Dimensions.get("window");
-
 export default function App() {
   const [movies, setMovies] = useState([]);
+  const [search, setSearch] = useState("Marvel");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [selectedMovie, setSelectedMovie] = useState(null);
 
   useEffect(() => {
-    loadMovies();
-  }, []);
+    const delayDebounceFn = setTimeout(() => {
+      loadMovies(true);
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [search]);
 
   const loadMovies = async (reset = false) => {
     if (loading) return;
     setLoading(true);
-
-    const currentPage = reset ? 1 : page;
-    const newMovies = await getMovies(currentPage);
-
-    if (newMovies.length > 0) {
-      setMovies((prev) => (reset ? newMovies : [...prev, ...newMovies]));
-      setPage(currentPage + 1);
-    }
-
+    const nextPage = reset ? 1 : page;
+    const data = await getMovies(nextPage, search || "Marvel");
+    setMovies((prev) => (reset ? data : [...prev, ...data]));
+    setPage(nextPage + 1);
     setLoading(false);
-    setRefreshing(false);
   };
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadMovies(true);
-  };
-
-  const renderMovie = ({ item }) => (
-    <View style={styles.card}>
-      <Image
-        source={{ uri: item.image }}
-        style={styles.poster}
-        resizeMode="cover"
-      />
-      <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={2}>
+  const MovieCard = ({ item }) => (
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => setSelectedMovie(item)}
+    >
+      <Image source={{ uri: item.image }} style={styles.poster} />
+      <View style={styles.cardInfo}>
+        <Text style={styles.cardTitle} numberOfLines={1}>
           {item.title}
         </Text>
-        <Text style={styles.year}>
-          📅 {item.year} ⭐ {item.rating}
+        <Text style={styles.cardYear}>
+          {item.year} • ⭐ {item.rating}
         </Text>
-        <Text style={styles.description} numberOfLines={4}>
+        <Text style={styles.cardDesc} numberOfLines={3}>
           {item.description}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>OMDb Movies</Text>
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search Movie..."
+          placeholderTextColor="#888"
+          value={search === "Marvel" ? "" : search}
+          onChangeText={(text) => setSearch(text)}
+        />
       </View>
 
       <FlatList
         data={movies}
         keyExtractor={(item, index) => item.id + index}
-        renderItem={renderMovie}
+        renderItem={({ item }) => <MovieCard item={item} />}
         onEndReached={() => loadMovies()}
-        onEndReachedThreshold={0.5}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        ListFooterComponent={
-          loading && (
-            <ActivityIndicator
-              size="large"
-              color="#f1c40f"
-              style={{ margin: 20 }}
-            />
-          )
-        }
-        ListEmptyComponent={
-          !loading && (
-            <Text style={styles.emptyText}>No se encontraron películas.</Text>
-          )
-        }
+        ListFooterComponent={loading && <ActivityIndicator color="#f1c40f" />}
       />
+
+      <Modal
+        visible={!!selectedMovie}
+        animationType="slide"
+        transparent={false}
+      >
+        {selectedMovie && (
+          <View style={styles.modalContent}>
+            <ScrollView>
+              <Image
+                source={{ uri: selectedMovie.image }}
+                style={styles.modalImage}
+              />
+              <View style={styles.modalTextContainer}>
+                <Text style={styles.modalTitle}>{selectedMovie.title}</Text>
+                <Text style={styles.modalSub}>
+                  {selectedMovie.genre} • {selectedMovie.year}
+                </Text>
+                <Text style={styles.modalPlot}>
+                  {selectedMovie.description}
+                </Text>
+                <Text style={styles.modalDirector}>
+                  Director: {selectedMovie.director}
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.trailerBtn}
+                  onPress={() => alert("Opening YouTube...")}
+                >
+                  <Text style={styles.trailerBtnText}>▶ Watch Tráiler</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={() => setSelectedMovie(null)}
+            >
+              <Text style={styles.closeBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1a1a1a",
-  },
-  header: {
-    paddingTop: 50,
-    paddingBottom: 20,
-    backgroundColor: "#f1c40f",
-    alignItems: "center",
-    elevation: 4,
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
-    color: "#000",
+  container: { flex: 1, backgroundColor: "#0f0f0f", paddingTop: 40 },
+  searchContainer: { padding: 15 },
+  searchInput: {
+    backgroundColor: "#222",
+    color: "#fff",
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    height: 45,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#444",
   },
   card: {
     flexDirection: "row",
-    backgroundColor: "#262626",
+    backgroundColor: "#1a1a1a",
     marginHorizontal: 15,
-    marginTop: 15,
-    borderRadius: 12,
+    marginBottom: 15,
+    borderRadius: 15,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 5,
+    elevation: 8,
   },
-  poster: {
-    width: 120,
-    height: 180,
-  },
-  info: {
-    flex: 1,
+  poster: { width: 100, height: 150 },
+  cardInfo: { flex: 1, padding: 12 },
+  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  cardYear: { color: "#f1c40f", marginVertical: 4, fontSize: 13 },
+  cardDesc: { color: "#aaa", fontSize: 12, lineHeight: 16 },
+
+  modalContent: { flex: 1, backgroundColor: "#121212" },
+  modalImage: { width: "100%", height: 400 },
+  modalTextContainer: { padding: 20 },
+  modalTitle: { color: "#fff", fontSize: 26, fontWeight: "bold" },
+  modalSub: { color: "#f1c40f", marginVertical: 8 },
+  modalPlot: { color: "#ccc", fontSize: 15, lineHeight: 22 },
+  modalDirector: { color: "#888", marginTop: 15, fontStyle: "italic" },
+  trailerBtn: {
+    backgroundColor: "#f1c40f",
     padding: 15,
-    justifyContent: "flex-start",
+    borderRadius: 10,
+    marginTop: 25,
+    alignItems: "center",
   },
-  title: {
-    color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 5,
+  trailerBtnText: { color: "#000", fontWeight: "bold", fontSize: 16 },
+  closeBtn: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    padding: 10,
+    borderRadius: 20,
   },
-  year: {
-    color: "#f1c40f",
-    fontSize: 14,
-    marginBottom: 10,
-    fontWeight: "600",
-  },
-  description: {
-    color: "#cccccc",
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  emptyText: {
-    color: "#fff",
-    textAlign: "center",
-    marginTop: 50,
-    fontSize: 16,
-  },
+  closeBtnText: { color: "#fff", fontWeight: "bold" },
 });

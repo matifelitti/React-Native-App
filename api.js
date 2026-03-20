@@ -1,11 +1,10 @@
 import { OMDB_API_KEY } from "@env";
-
 const BASE_URL = "https://www.omdbapi.com";
 
-export async function getMovies(page = 1) {
+export async function getMovies(page = 1, query = "Marvel") {
   try {
     const response = await fetch(
-      `${BASE_URL}?apikey=${OMDB_API_KEY}&s=Marvel&page=${page}&type=movie`,
+      `${BASE_URL}?apikey=${OMDB_API_KEY}&s=${query}&page=${page}&type=movie`,
     );
     const data = await response.json();
 
@@ -23,13 +22,14 @@ export async function getMovies(page = 1) {
     return detailedMovies.map((m) => ({
       id: m.imdbID,
       title: m.Title,
-      description: m.Plot !== "N/A" ? m.Plot : "No description available.",
+      description: m.Plot,
       image: m.Poster !== "N/A" ? m.Poster : "https://via.placeholder.com",
       year: m.Year,
       rating: m.imdbRating,
+      genre: m.Genre,
+      director: m.Director,
     }));
   } catch (error) {
-    console.error("Error in OMDb:", error);
     return [];
   }
 }
