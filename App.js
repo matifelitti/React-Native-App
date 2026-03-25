@@ -124,7 +124,7 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0f0f0f", paddingTop: 40 },
+  container: { flex: 1, backgroundColor: "#0f0f0f", paddingTop: 30 },
   searchContainer: { padding: 15 },
   searchInput: {
     backgroundColor: "#222",
@@ -139,9 +139,9 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     backgroundColor: "#1a1a1a",
-    marginHorizontal: 15,
-    marginBottom: 15,
-    borderRadius: 15,
+    marginHorizontal: 35,
+    marginBottom: 25,
+    borderRadius: 25,
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -149,14 +149,23 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 8,
   },
-  poster: { width: 100, height: 150 },
-  cardInfo: { flex: 1, padding: 12 },
-  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  poster: { width: 100, height: 150, margin: 16 },
+  cardInfo: { flex: 1, padding: 8 },
+  cardTitle: { color: "#fff", fontSize: 16, fontWeight: "bold", marginTop: 25 },
   cardYear: { color: "#f1c40f", marginVertical: 4, fontSize: 13 },
   cardDesc: { color: "#aaa", fontSize: 12, lineHeight: 16 },
 
-  modalContent: { flex: 1, backgroundColor: "#121212" },
-  modalImage: { width: "100%", height: 400 },
+  modalContent: {
+    flex: 1,
+    backgroundColor: "#0f0f0f",
+    marginTop: 30,
+    marginBottom: 30,
+    width: 600,
+    height: 300,
+    alignSelf: "center",
+    overflow: "hidden",
+  },
+  modalImage: { width: "100%", height: 200 },
   modalTextContainer: { padding: 20 },
   modalTitle: { color: "#fff", fontSize: 26, fontWeight: "bold" },
   modalSub: { color: "#f1c40f", marginVertical: 8 },
