@@ -11,7 +11,9 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  Alert,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getMovies } from "./api";
 
 export default function App() {
@@ -20,11 +22,15 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      loadMovies(true);
+    const delayDebounceFn = setTimeout(async () => {
+      if (search.length > 2) {
+        await loadMovies(true);
+      }
     }, 500);
+
     return () => clearTimeout(delayDebounceFn);
   }, [search]);
 
@@ -36,6 +42,34 @@ export default function App() {
     setMovies((prev) => (reset ? data : [...prev, ...data]));
     setPage(nextPage + 1);
     setLoading(false);
+
+    if (search && search.trim().length > 0 && search !== "Marvel") {
+      saveSearch(search);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await loadMovies(true);
+    } catch (error) {
+      Alert.alert("Connection Error", "Unable to load the movies");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const saveSearch = async (query) => {
+    try {
+      const history = (await AsyncStorage.getItem("search_history")) || "[]";
+      let searches = JSON.parse(history);
+
+      searches = [query, ...searches.filter((s) => s !== query)].slice(0, 5);
+
+      await AsyncStorage.setItem("search_history", JSON.stringify(searches));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const MovieCard = ({ item }) => (
@@ -77,6 +111,9 @@ export default function App() {
         onEndReached={() => loadMovies()}
         ListFooterComponent={loading && <ActivityIndicator color="#f1c40f" />}
         showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        onEndReachedThreshold={0.5}
       />
       <Modal visible={!!selectedMovie} transparent={true} animationType="fade">
         <View style={styles.overlay}>
