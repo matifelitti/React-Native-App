@@ -14,6 +14,8 @@ import {
   Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import YoutubePlayer from "react-native-youtube-iframe";
+import { Platform } from "react-native";
 import { getMovies } from "./api";
 
 export default function App() {
@@ -23,6 +25,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(async () => {
@@ -120,37 +123,72 @@ export default function App() {
           <View style={styles.modalContent}>
             <TouchableOpacity
               style={styles.closeBtn}
-              onPress={() => setSelectedMovie(null)}
+              onPress={() => {
+                setSelectedMovie(null);
+                setPlaying(false);
+              }}
             >
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+            >
               {selectedMovie && (
                 <>
-                  <Image
-                    source={{ uri: selectedMovie.image }}
-                    style={styles.modalImage}
-                  />
+                  <View
+                    style={{
+                      height: 220,
+                      backgroundColor: "#000",
+                      borderRadius: 15,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {Platform.OS === "web" ? (
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={`https://youtube.com{playing ? 1 : 0}&rel=0`}
+                        frameBorder="0"
+                        allow="autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        style={{ border: "none" }}
+                      ></iframe>
+                    ) : (
+                      <YoutubePlayer
+                        height={220}
+                        play={playing}
+                        videoId={"l9ufpD8YpM4"}
+                        onChangeState={(state) => {
+                          if (state === "ended") setPlaying(false);
+                        }}
+                      />
+                    )}
+                  </View>
 
                   <View style={styles.modalTextContainer}>
                     <Text style={styles.modalTitle}>{selectedMovie.title}</Text>
                     <Text style={styles.modalSub}>
                       {selectedMovie.genre} • {selectedMovie.year}
                     </Text>
+
+                    <TouchableOpacity
+                      style={[styles.trailerBtn, { marginBottom: 20 }]}
+                      onPress={() => setPlaying(!playing)}
+                    >
+                      <Text style={styles.trailerBtnText}>
+                        {playing ? "⏸ Pause Trailer" : "▶ Watch Trailer"}
+                      </Text>
+                    </TouchableOpacity>
+
                     <Text style={styles.modalPlot}>
                       {selectedMovie.description}
                     </Text>
+
                     <Text style={styles.modalDirector}>
                       Director: {selectedMovie.director}
                     </Text>
-
-                    <TouchableOpacity
-                      style={styles.trailerBtn}
-                      onPress={() => alert("Opening YouTube...")}
-                    >
-                      <Text style={styles.trailerBtnText}>▶ Watch Trailer</Text>
-                    </TouchableOpacity>
                   </View>
                 </>
               )}
@@ -233,10 +271,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
     borderRadius: 10,
   },
-  modalTextContainer: { padding: 20 },
+  modalTextContainer: { padding: 20, paddingTop: 10 },
   modalTitle: { color: "#fff", fontSize: 26, fontWeight: "bold" },
   modalSub: { color: "#f1c40f", marginVertical: 8 },
-  modalPlot: { color: "#ccc", fontSize: 15, lineHeight: 22 },
+  modalPlot: { color: "#ccc", fontSize: 15, lineHeight: 22, marginTop: 10 },
   modalDirector: { color: "#888", marginTop: 15, fontStyle: "italic" },
   trailerBtn: {
     backgroundColor: "#f1c40f",
